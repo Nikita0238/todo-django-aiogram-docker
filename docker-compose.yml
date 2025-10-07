@@ -1,0 +1,82 @@
+version: '3.8'
+services:
+  db:
+    image: postgres:15
+    restart: always
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB}
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - webnet
+
+  redis:
+    image: redis:7
+    restart: always
+    networks:
+      - webnet
+
+  web:
+    build:
+      context: backend
+    command: gunicorn project.wsgi:application --bind 0.0.0.0:8000
+    volumes:
+      - ./backend:/app
+    env_file:
+      - .env
+    depends_on:
+      - db
+      - redis
+    ports:
+      - "8000:8000"
+    networks:
+      - webnet
+
+  celery_worker:
+    build:
+      context: backend
+    command: celery -A project worker --loglevel=info
+    volumes:
+      - ./backend:/app
+    env_file:
+      - .env
+    depends_on:
+      - web
+      - redis
+      - db
+    networks:
+      - webnet
+
+  celery_beat:
+    build:
+      context: backend
+    command: celery -A project beat --loglevel=info -S django
+    volumes:
+      - ./backend:/app
+    env_file:
+      - .env
+    depends_on:
+      - web
+      - redis
+    networks:
+      - webnet
+
+  bot:
+    build:
+      context: bot
+    volumes:
+      - ./bot:/bot
+    env_file:
+      - .env
+    depends_on:
+      - web
+    networks:
+      - webnet
+
+volumes:
+  postgres_data:
+
+networks:
+  webnet:
