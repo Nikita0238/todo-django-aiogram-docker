@@ -1,6 +1,6 @@
 # ToDo Full Project (Django + Aiogram + Celery + Docker)
 
-This archive contains a full example implementation. Important files:
+Important files:
 - backend/: Django app (users, tasks_app)
 - bot/: Aiogram telegram bot
 - docker-compose.yml
